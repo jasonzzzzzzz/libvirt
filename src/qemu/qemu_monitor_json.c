@@ -3975,6 +3975,8 @@ qemuMonitorJSONBlockdevMirror(qemuMonitor *mon,
         autodismiss = VIR_TRISTATE_BOOL_NO;
     }
 
+    /* jz: */
+    /* Method 1: leverage QEMU's blockdev-mirror to perform storage live migration*/
     cmd = qemuMonitorJSONMakeCommand("blockdev-mirror",
                                      "S:job-id", jobname,
                                      "s:device", device,
@@ -3994,6 +3996,10 @@ qemuMonitorJSONBlockdevMirror(qemuMonitor *mon,
         return -1;
 
     return qemuMonitorJSONCheckError(cmd, reply);
+
+    /* jz: */
+    /* Method 2: leverage Portal*/
+     
 }
 
 
@@ -7093,7 +7099,7 @@ qemuMonitorJSONGetIOThreads(qemuMonitor *mon,
     return ret;
 }
 
-
+/* jz: Consider this when parallelizing IOThreads for qemu migration*/
 int
 qemuMonitorJSONSetIOThread(qemuMonitor *mon,
                            qemuMonitorIOThreadInfo *iothreadInfo)

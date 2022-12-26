@@ -965,7 +965,7 @@ qemuMigrationSrcCancelRemoveTempBitmaps(virDomainObj *vm,
     return 0;
 }
 
-
+/* jz: Portal-QEMU interface */ 
 static virStorageSource *
 qemuMigrationSrcNBDStorageCopyBlockdevPrepareSource(virDomainDiskDef *disk,
                                                     const char *host,
@@ -1007,7 +1007,7 @@ qemuMigrationSrcNBDStorageCopyBlockdevPrepareSource(virDomainDiskDef *disk,
     return g_steal_pointer(&copysrc);
 }
 
-
+/* jz: Portal-QEMU interface */ 
 static int
 qemuMigrationSrcNBDStorageCopyBlockdev(virDomainObj *vm,
                                        virDomainDiskDef *disk,
@@ -1047,6 +1047,8 @@ qemuMigrationSrcNBDStorageCopyBlockdev(virDomainObj *vm,
 
     mon_ret = qemuBlockStorageSourceAttachApply(qemuDomainGetMonitor(vm), data);
 
+    /* jz: */
+    /* Method 1: leverage QEMU's blockdev-mirror to perform storage live migration*/
     if (mon_ret == 0)
         mon_ret = qemuMonitorBlockdevMirror(qemuDomainGetMonitor(vm), diskAlias, true,
                                             qemuDomainDiskGetTopNodename(disk),
@@ -1056,6 +1058,14 @@ qemuMigrationSrcNBDStorageCopyBlockdev(virDomainObj *vm,
 
     if (mon_ret != 0)
         qemuBlockStorageSourceAttachRollback(qemuDomainGetMonitor(vm), data);
+
+    /* jz: */
+    /* Method 2: leverage Portal */
+    /* Jump from line 1056 before calling qemuMonitorBlockdevMirror wehn mon_ret==0 to here
+    * If Portal Daemon on the source host checks that the migration successfully completes, we assign mon_ret to be 0
+    * State management: make sure the things BlockdevMirror did be replayed correctly for this emulation
+        * QEMU_CHECK_MONITOR(qemuDomainGetMonitor(vm)); performed in qemuMonitorBlockdevMirror() defined in qemu_monitor.c
+    */
 
     qemuDomainObjExitMonitor(vm);
     if (mon_ret < 0)
@@ -1092,6 +1102,7 @@ qemuMigrationSrcNBDStorageCopyOne(virDomainObj *vm,
     if (!(job = qemuBlockJobDiskNew(vm, disk, QEMU_BLOCKJOB_TYPE_COPY, diskAlias)))
         return -1;
 
+    /* jz: what is sync? */
     qemuBlockJobSyncBegin(job);
 
     rc = qemuMigrationSrcNBDStorageCopyBlockdev(vm,
@@ -1103,13 +1114,23 @@ qemuMigrationSrcNBDStorageCopyOne(virDomainObj *vm,
                                                 tlsHostname,
                                                 syncWrites);
 
+    /* jz: */
+    /* we can emulate a qemuMigrationSrcNBDStorageCopyBlockdev through Portal, while still create teh job obj
+     * after checking Portal completes, we can make rc = 0
+     * maybe you should not use qemuBlockJobStarted and qemuBlockJobStartupFinalize, just set diskPriv->migrating = true; and then set ret = 0; 
+    
+     * Add fault handling of Portal here (some cases you should think that your migration fails or should be cancelled and roll back)
+     * Add monitoring process and give the users the right progress at the moment */
+
+    /* jz: when migration, set the status to be MIGRATE */
     if (rc == 0) {
         diskPriv->migrating = true;
         qemuBlockJobStarted(job, vm);
         ret = 0;
     }
 
-    qemuBlockJobStartupFinalize(vm, job);
+    /* jz: once migration finishes, Finalize the migration start */
+    qemuBlockJobStartupFinalize(vm, job); /* jz: Cancels and clears the job private data if the job was not started with qemu (see qemuBlockJobStarted) or just clears up the local reference to @job if it was started. */
     return ret;
 }
 
@@ -1214,6 +1235,7 @@ qemuMigrationSrcNBDStorageCopy(virQEMUDriver *driver,
         if (!qemuMigrationAnyCopyDisk(disk, nmigrate_disks, migrate_disks))
             continue;
 
+        /* jz: the core migration action */
         if (qemuMigrationSrcNBDStorageCopyOne(vm, disk, host, port,
                                               socket,
                                               mirror_speed, mirror_shallow,
@@ -1226,6 +1248,7 @@ qemuMigrationSrcNBDStorageCopy(virQEMUDriver *driver,
         }
     }
 
+    /* jz: hanldling exceptions */
     while ((rv = qemuMigrationSrcNBDStorageCopyReady(vm, VIR_ASYNC_JOB_MIGRATION_OUT)) != 1) {
         if (rv < 0)
             return -1;
