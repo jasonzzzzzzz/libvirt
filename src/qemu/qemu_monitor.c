@@ -19,6 +19,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+/* jz: This file relates to qemu monitor, where qemu migration process and IO threads methods exist. */
+
 #include <config.h>
 
 #include <poll.h>

@@ -16,6 +16,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+/* jz: This file relates to qemu block primitive that copy data of NBD storage*/
+
 #include <config.h>
 
 #include "qemu_block.h"

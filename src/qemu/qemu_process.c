@@ -19,6 +19,8 @@
  *
  */
 
+/* jz: This file relates to qemu process, where qemu migration process and IO threads methods exist. */
+
 #include <config.h>
 
 #include <fcntl.h>

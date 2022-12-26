@@ -19,6 +19,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+/* jz: This file relates to qemu interface. Consider if this relates to Portal software. */
+
 #include <config.h>
 
 #include "network_conf.h"

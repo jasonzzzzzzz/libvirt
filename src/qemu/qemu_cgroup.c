@@ -19,6 +19,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+/* jz: This file relates to qemu cgroup interface that allocates resources (io, network, mem, etc.) in QEMU */
+
 #include <config.h>
 
 #include "qemu_cgroup.h"

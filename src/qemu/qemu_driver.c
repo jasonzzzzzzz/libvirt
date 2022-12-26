@@ -19,6 +19,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+/* jz: This file relates to qemu driver. Consider if this relates to Portal driver. */
+
 #include <config.h>
 
 #include <sys/types.h>
